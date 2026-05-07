@@ -1,9 +1,25 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+# database.py
+import os
+from sqlmodel import create_engine, SQLModel, Session
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql://neondb_owner:npg_jKoqsB8p6OGm@ep-blue-leaf-aqp8um3p-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# Cargar variables del archivo .env
+load_dotenv()
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+# URL de conexión de Neon
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-Base = declarative_base()
+# Crear conexión con PostgreSQL Neon
+engine = create_engine(
+    DATABASE_URL,
+    echo=True
+)
+
+# Crear tablas automáticamente
+def create_tables():
+    SQLModel.metadata.create_all(engine)
+
+# Crear sesiones para operaciones CRUD
+def get_session():
+    with Session(engine) as session:
+        yield session

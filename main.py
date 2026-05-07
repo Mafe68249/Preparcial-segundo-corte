@@ -1,16 +1,141 @@
-# This is a sample Python script.
+from fastapi import FastAPI, Depends
+from sqlmodel import Session, select
 
-# Press Mayús+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from database import create_tables, get_session
+from models import Moto, Usuario
+
+app = FastAPI()
+
+# CREAR TABLAS MANUALMENTE
+create_tables()
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# RUTA PRINCIPAL
+@app.get("/")
+def inicio():
+    return {"mensaje": "API de motos funcionando correctamente"}
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# =========================
+# CRUD USUARIOS
+# =========================
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+@app.post("/usuarios/")
+def crear_usuario(
+    usuario: Usuario,
+    session: Session = Depends(get_session)
+):
+
+    session.add(usuario)
+    session.commit()
+    session.refresh(usuario)
+
+    return usuario
+
+
+@app.get("/usuarios/")
+def ver_usuarios(
+    session: Session = Depends(get_session)
+):
+
+    usuarios = session.exec(select(Usuario)).all()
+
+    return usuarios
+
+
+@app.get("/usuarios/{id}")
+def ver_usuario(
+    id: int,
+    session: Session = Depends(get_session)
+):
+
+    usuario = session.get(Usuario, id)
+
+    if not usuario:
+        return {"mensaje": "Usuario no encontrado"}
+
+    return usuario
+
+
+# =========================
+# CRUD MOTOS
+# =========================
+
+@app.post("/motos/")
+def crear_moto(
+    moto: Moto,
+    session: Session = Depends(get_session)
+):
+
+    session.add(moto)
+    session.commit()
+    session.refresh(moto)
+
+    return moto
+
+
+@app.get("/motos/")
+def ver_motos(
+    session: Session = Depends(get_session)
+):
+
+    motos = session.exec(select(Moto)).all()
+
+    return motos
+
+
+@app.get("/motos/{id}")
+def ver_moto(
+    id: int,
+    session: Session = Depends(get_session)
+):
+
+    moto = session.get(Moto, id)
+
+    if not moto:
+        return {"mensaje": "Moto no encontrada"}
+
+    return moto
+
+
+@app.put("/motos/{id}")
+def actualizar_moto(
+    id: int,
+    datos: Moto,
+    session: Session = Depends(get_session)
+):
+
+    moto = session.get(Moto, id)
+
+    if not moto:
+        return {"mensaje": "Moto no encontrada"}
+
+    moto.modelo = datos.modelo
+    moto.marca = datos.marca
+    moto.cilindraje = datos.cilindraje
+    moto.color = datos.color
+    moto.precio = datos.precio
+    moto.usuario_id = datos.usuario_id
+
+    session.add(moto)
+    session.commit()
+    session.refresh(moto)
+
+    return moto
+
+
+@app.delete("/motos/{id}")
+def eliminar_moto(
+    id: int,
+    session: Session = Depends(get_session)
+):
+
+    moto = session.get(Moto, id)
+
+    if not moto:
+        return {"mensaje": "Moto no encontrada"}
+
+    session.delete(moto)
+    session.commit()
+
+    return {"mensaje": "Moto eliminada correctamente"}
