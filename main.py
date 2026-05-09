@@ -1,24 +1,26 @@
-from fastapi import FastAPI, Depends
-from sqlmodel import Session, select
+from fastapi import FastAPI, Depends, HTTPException
+from sqlmodel import Session
 
 from database import create_tables, get_session
-from models import Moto, Usuario
+from models import Moto, Usuario, MotoUpdate
+
+import operations
 
 app = FastAPI()
 
-# CREAR TABLAS MANUALMENTE
+
 create_tables()
 
 
-# RUTA PRINCIPAL
+
 @app.get("/")
 def inicio():
-    return {"mensaje": "API de motos funcionando correctamente"}
+
+    return {
+        "mensaje": "API de motos funcionando correctamente"
+    }
 
 
-# =========================
-# CRUD USUARIOS
-# =========================
 
 @app.post("/usuarios/")
 def crear_usuario(
@@ -26,11 +28,10 @@ def crear_usuario(
     session: Session = Depends(get_session)
 ):
 
-    session.add(usuario)
-    session.commit()
-    session.refresh(usuario)
-
-    return usuario
+    return operations.crear_usuario(
+        session,
+        usuario
+    )
 
 
 @app.get("/usuarios/")
@@ -38,9 +39,7 @@ def ver_usuarios(
     session: Session = Depends(get_session)
 ):
 
-    usuarios = session.exec(select(Usuario)).all()
-
-    return usuarios
+    return operations.obtener_usuarios(session)
 
 
 @app.get("/usuarios/{id}")
@@ -49,17 +48,20 @@ def ver_usuario(
     session: Session = Depends(get_session)
 ):
 
-    usuario = session.get(Usuario, id)
+    usuario = operations.obtener_usuario_por_id(
+        session,
+        id
+    )
 
     if not usuario:
-        return {"mensaje": "Usuario no encontrado"}
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
 
     return usuario
 
 
-# =========================
-# CRUD MOTOS
-# =========================
 
 @app.post("/motos/")
 def crear_moto(
@@ -67,11 +69,10 @@ def crear_moto(
     session: Session = Depends(get_session)
 ):
 
-    session.add(moto)
-    session.commit()
-    session.refresh(moto)
-
-    return moto
+    return operations.crear_moto(
+        session,
+        moto
+    )
 
 
 @app.get("/motos/")
@@ -79,9 +80,7 @@ def ver_motos(
     session: Session = Depends(get_session)
 ):
 
-    motos = session.exec(select(Moto)).all()
-
-    return motos
+    return operations.obtener_motos(session)
 
 
 @app.get("/motos/{id}")
@@ -90,38 +89,49 @@ def ver_moto(
     session: Session = Depends(get_session)
 ):
 
-    moto = session.get(Moto, id)
+    moto = operations.obtener_moto_por_id(
+        session,
+        id
+    )
 
     if not moto:
-        return {"mensaje": "Moto no encontrada"}
+        raise HTTPException(
+            status_code=404,
+            detail="Moto no encontrada"
+        )
 
     return moto
 
 
-@app.put("/motos/{id}")
-def actualizar_moto(
+
+@app.patch("/motos/{id}")
+def modificar_parcial_moto(
     id: int,
-    datos: Moto,
+    datos: MotoUpdate,
     session: Session = Depends(get_session)
 ):
 
-    moto = session.get(Moto, id)
+    moto = operations.obtener_moto_por_id(
+        session,
+        id
+    )
 
     if not moto:
-        return {"mensaje": "Moto no encontrada"}
+        raise HTTPException(
+            status_code=404,
+            detail="Moto no encontrada"
+        )
 
-    moto.modelo = datos.modelo
-    moto.marca = datos.marca
-    moto.cilindraje = datos.cilindraje
-    moto.color = datos.color
-    moto.precio = datos.precio
-    moto.usuario_id = datos.usuario_id
+    datos_actualizados = datos.dict(
+        exclude_unset=True
+    )
 
-    session.add(moto)
-    session.commit()
-    session.refresh(moto)
+    return operations.actualizar_moto(
+        session,
+        moto,
+        datos_actualizados
+    )
 
-    return moto
 
 
 @app.delete("/motos/{id}")
@@ -130,12 +140,18 @@ def eliminar_moto(
     session: Session = Depends(get_session)
 ):
 
-    moto = session.get(Moto, id)
+    moto = operations.obtener_moto_por_id(
+        session,
+        id
+    )
 
     if not moto:
-        return {"mensaje": "Moto no encontrada"}
+        raise HTTPException(
+            status_code=404,
+            detail="Moto no encontrada"
+        )
 
-    session.delete(moto)
-    session.commit()
-
-    return {"mensaje": "Moto eliminada correctamente"}
+    return operations.eliminar_moto(
+        session,
+        moto
+    )
