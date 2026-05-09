@@ -2,7 +2,6 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 
 
-# TABLA USUARIOS
 class Usuario(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -12,7 +11,7 @@ class Usuario(SQLModel, table=True):
     ciudad: str
 
 
-# TABLA MOTOS
+
 class Moto(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -21,6 +20,16 @@ class Moto(SQLModel, table=True):
     cilindraje: int
     color: str
     precio: float
+    activo: bool = True
 
-    # Relación simple con usuario
     usuario_id: int
+
+
+class MotoUpdate(SQLModel):
+
+    modelo: Optional[str] = None
+    marca: Optional[str] = None
+    cilindraje: Optional[int] = None
+    color: Optional[str] = None
+    precio: Optional[float] = None
+    usuario_id: Optional[int] = None
